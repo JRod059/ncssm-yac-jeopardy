@@ -1,0 +1,1357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YAC Jeopardy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================
+   1. Theme tokens (NCSSM brand)
+   ========================================================== */
+:root{
+  --blue:#346094; --blue-dark:#27486e; --blue-deep:#18304d; --light-blue:#a2c9e8;
+  --gold:#f4c300; --plum:#7d3774; --green:#4d7732; --orange:#cb843c;
+  --gray:#8a8a8d; --ink:#252525; --paper:#f4f7fb; --white:#fff;
+  --font:"Montserrat", Verdana, Arial, sans-serif;
+  --danger:#a12d2d;
+}
+
+/* ==========================================================
+   2. Base
+   ========================================================== */
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html,body{ margin:0; }
+body{ font-family:var(--font); background:var(--paper); color:var(--ink); }
+body.playing{ background:var(--blue-deep); overflow:hidden; }
+button,input,textarea{ font-family:inherit; }
+button:focus-visible,input:focus-visible,textarea:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+h1,h2,h3{ margin:0; }
+p{ margin:0; }
+.eyebrow{ font-size:.8rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--gray); }
+
+.btn{
+  font-weight:700; font-size:.95rem; border-radius:999px; padding:.55rem 1.1rem;
+  border:2px solid var(--blue); background:var(--white); color:var(--blue);
+  cursor:pointer; transition:transform .12s ease, background-color .2s ease, opacity .2s;
+}
+.btn:hover:not(:disabled){ transform:translateY(-1px); background:#eaf2fa; }
+.btn:active:not(:disabled){ transform:scale(.97); }
+.btn:disabled{ opacity:.45; cursor:not-allowed; }
+.btn.primary{ background:var(--blue); color:var(--white); }
+.btn.primary:hover:not(:disabled){ background:var(--blue-dark); }
+.btn.ghost{ border-color:transparent; background:transparent; }
+.btn.danger{ color:var(--danger); border-color:#c96a6a; }
+.btn.small{ font-size:.8rem; padding:.3rem .7rem; }
+
+/* ==========================================================
+   3. Home screen
+   ========================================================== */
+#home,#editor,#setup{ min-height:100vh; padding:2rem clamp(1rem,3vw,2.5rem) 4rem; }
+.home-head{ margin-bottom:1.5rem; }
+.home-head h1{ font-size:clamp(2rem,4vw,3rem); font-weight:900; color:var(--blue-deep); }
+.subtitle{ color:var(--blue); font-weight:600; margin-top:.2rem; }
+.toolbar{ display:flex; flex-wrap:wrap; gap:.6rem; margin:1.2rem 0 1.6rem; }
+.board-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1.1rem; }
+.board-card{
+  background:var(--white); border-radius:18px; padding:1.2rem 1.3rem; box-shadow:0 6px 18px rgba(24,48,77,.1);
+  display:flex; flex-direction:column; gap:.5rem; transition:transform .2s ease;
+}
+.board-card:hover{ transform:translateY(-2px); }
+.card-title{ font-size:1.2rem; font-weight:800; color:var(--blue-deep); overflow-wrap:anywhere; }
+.card-meta{ color:var(--gray); font-weight:600; font-size:.9rem; }
+.card-actions{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:auto; padding-top:.6rem; }
+.empty{ color:var(--gray); font-weight:600; }
+.resume-card{
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep)); color:var(--white); border-radius:20px;
+  padding:1.3rem 1.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:center;
+  box-shadow:0 8px 22px rgba(24,48,77,.25); margin-bottom:1rem;
+}
+.resume-card .eyebrow{ color:var(--gold); }
+.resume-card h2{ font-size:1.5rem; font-weight:900; margin:.2rem 0 .6rem; }
+.resume-scores{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.5rem; }
+.resume-team{ background:var(--accent); color:var(--ink); border-radius:999px; padding:.3rem .8rem; font-weight:700; display:flex; gap:.5rem; }
+.resume-actions{ display:flex; gap:.6rem; flex-wrap:wrap; }
+.resume-actions .btn{ background:var(--white); color:var(--blue-deep); border-color:var(--white); }
+.resume-actions .btn.primary{ background:var(--gold); color:var(--ink); border-color:var(--gold); }
+.resume-actions .btn.danger{ background:transparent; color:var(--white); border-color:rgba(255,255,255,.6); }
+
+/* ==========================================================
+   4. Editor
+   ========================================================== */
+.editor-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:.8rem; margin-bottom:1.2rem; }
+.title-input{
+  font-size:1.6rem; font-weight:900; color:var(--blue-deep); border:2px solid transparent; border-radius:12px;
+  padding:.3rem .6rem; background:var(--white); min-width:280px; flex:1 1 320px; max-width:600px;
+}
+.title-input:focus{ border-color:var(--blue); }
+.save-status{ font-size:.85rem; font-weight:700; color:var(--gray); min-width:4.5rem; }
+.editor-actions{ display:flex; flex-wrap:wrap; gap:.5rem; margin-left:auto; }
+.editor-scroll{ overflow-x:auto; padding-bottom:1rem; }
+.editor-grid{
+  display:grid; grid-template-columns:110px repeat(var(--cols), 250px); gap:10px; width:max-content;
+  align-items:start;
+}
+.ed-corner{ font-weight:800; color:var(--gray); align-self:center; text-transform:uppercase; font-size:.8rem; }
+.ed-head{
+  background:var(--blue-dark); color:var(--white); border-radius:14px; padding:.6rem; display:flex; flex-direction:column; gap:.4rem;
+}
+.ed-head .ed-label{ font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; opacity:.85; }
+.ed-head input{ font-weight:800; font-size:1rem; border-radius:8px; border:2px solid transparent; padding:.35rem .5rem; color:var(--ink); }
+.ed-head input:focus{ border-color:var(--gold); }
+.ed-head .btn{ align-self:flex-start; background:transparent; color:var(--white); border-color:rgba(255,255,255,.6); }
+.ed-value{ display:flex; flex-direction:column; gap:.4rem; background:var(--white); border-radius:12px; padding:.5rem; box-shadow:0 2px 8px rgba(24,48,77,.08); }
+.ed-value input{ font-size:1.2rem; font-weight:900; color:var(--blue-deep); border:2px solid #d5dfeb; border-radius:8px; padding:.35rem .5rem; width:100%; }
+.ed-value .btn{ align-self:flex-start; }
+.ed-cell{ background:var(--white); border-radius:12px; padding:.6rem; display:flex; flex-direction:column; gap:.5rem; box-shadow:0 2px 8px rgba(24,48,77,.08); }
+.ed-field{ display:flex; flex-direction:column; gap:.2rem; }
+.ed-field span{ font-size:.7rem; font-weight:800; text-transform:uppercase; color:var(--blue); letter-spacing:.05em; }
+.ed-field textarea{ width:100%; resize:vertical; border:2px solid #d5dfeb; border-radius:8px; padding:.4rem .5rem; font-size:.9rem; line-height:1.35; color:var(--ink); }
+.ed-field textarea:focus{ border-color:var(--blue); }
+
+/* ==========================================================
+   5. Setup
+   ========================================================== */
+.setup-card{
+  background:var(--white); border-radius:22px; padding:2rem; max-width:720px; margin:2rem auto 0;
+  box-shadow:0 10px 28px rgba(24,48,77,.12); display:flex; flex-direction:column; gap:1.3rem;
+}
+.setup-title{ font-size:1.8rem; font-weight:900; color:var(--blue-deep); overflow-wrap:anywhere; }
+.field{ display:flex; flex-direction:column; gap:.35rem; }
+.field-label{ font-size:.85rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--blue); }
+.field input[type=text],.field input[type=number]{
+  font-size:1.1rem; font-weight:600; border:2px solid #d5dfeb; border-radius:12px; padding:.55rem .75rem; max-width:320px; color:var(--ink);
+}
+.stepper{ display:flex; align-items:center; gap:.8rem; }
+.step{
+  width:44px; height:44px; border-radius:50%; border:2px solid var(--blue); background:var(--white); color:var(--blue);
+  font-size:1.4rem; font-weight:800; cursor:pointer; line-height:1;
+}
+.step:disabled{ opacity:.4; cursor:not-allowed; }
+.step-value{ font-size:1.8rem; font-weight:900; min-width:2ch; text-align:center; }
+.names-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:.8rem 1rem; }
+.setup-actions{ display:flex; justify-content:flex-end; gap:.6rem; margin-top:.4rem; }
+
+/* ==========================================================
+   6. Play: board view
+   ========================================================== */
+#play{ height:100vh; height:100dvh; display:flex; flex-direction:column; background:var(--blue-deep); color:var(--white); overflow:hidden; }
+.topbar{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.6vh 1vw; min-width:0; }
+.play-title{ font-size:clamp(1rem,2.6vh,1.6rem); font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-actions{ display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end; flex-shrink:0; }
+.top-btn{
+  font-size:.85rem; font-weight:700; padding:.4rem .85rem; border-radius:999px; cursor:pointer;
+  background:rgba(255,255,255,.12); color:var(--white); border:2px solid rgba(255,255,255,.35);
+}
+.top-btn:hover:not(:disabled){ background:rgba(255,255,255,.22); }
+.top-btn:disabled{ opacity:.4; cursor:not-allowed; }
+.board{
+  flex:1; min-height:0; display:grid;
+  grid-template-columns:repeat(var(--cols), minmax(0,1fr));
+  grid-template-rows:auto repeat(var(--rows), minmax(0,1fr));
+  gap:1.2vh .6vw; padding:.6vh 1vw;
+}
+.cat-head{
+  background:var(--blue-dark); color:var(--white); text-transform:uppercase; font-weight:800; text-align:center;
+  display:flex; align-items:center; justify-content:center; border-radius:14px; padding:1vh .5vw;
+  font-size:clamp(.7rem,2.1vh,1.5rem); line-height:1.15; overflow-wrap:anywhere; hyphens:auto; min-width:0;
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.2);
+}
+.tile{
+  min-width:0; min-height:0; border:none; border-radius:16px; cursor:pointer; color:var(--gold);
+  font-weight:900; font-size:clamp(1.3rem,5.4vh,4.8rem); letter-spacing:.01em;
+  background:linear-gradient(160deg,#4274ad 0%,var(--blue) 55%,#2c5282 100%);
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.18), 0 4px 10px rgba(0,0,0,.3);
+  text-shadow:0 3px 0 rgba(0,0,0,.25);
+  transition:transform .15s cubic-bezier(.3,1.6,.5,1), box-shadow .2s ease;
+}
+.tile:hover:not(:disabled){ transform:translateY(-3px) scale(1.02); box-shadow:inset 0 -6px 0 rgba(0,0,0,.18), 0 8px 16px rgba(0,0,0,.35); }
+.tile:active:not(:disabled){ transform:scale(.96); }
+.tile:disabled{ cursor:default; background:rgba(255,255,255,.05); box-shadow:none; text-shadow:none; }
+.board-note{ text-align:center; color:var(--light-blue); font-weight:700; padding:.4vh 1vw; flex-shrink:0; }
+
+.teambar{ display:flex; gap:.8vw; padding:1vh 1vw 1.6vh; flex-shrink:0; }
+.team-chip{
+  flex:1 1 0; min-width:110px; background:var(--accent); color:var(--ink); border-radius:18px;
+  padding:1vh .8vw; display:flex; flex-direction:column; align-items:center; gap:.2vh;
+  transition:box-shadow .25s ease, transform .25s ease;
+}
+.team-chip.is-turn{ box-shadow:0 0 0 4px var(--gold), 0 0 0 9px rgba(244,195,0,.35); transform:translateY(-4px); }
+.turn-label{ font-size:clamp(.65rem,1.5vh,.95rem); font-weight:900; text-transform:uppercase; letter-spacing:.06em; min-height:1.3em; }
+.team-name{
+  display:block; width:100%; max-width:100%; background:none; border:none; color:inherit; padding:0; cursor:pointer;
+  font-size:clamp(.9rem,2.4vh,1.5rem); font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center;
+}
+.team-score{
+  background:none; border:none; color:inherit; padding:0; cursor:pointer; font-weight:900; line-height:1.1;
+  font-size:clamp(1.4rem,4.6vh,3.1rem); font-variant-numeric:tabular-nums;
+}
+.team-score.pop{ animation:pop .6s ease; }
+.score-input{
+  width:100%; max-width:8rem; text-align:center; font-weight:900; font-size:clamp(1.2rem,4vh,2.6rem);
+  border:2px solid var(--white); border-radius:12px; padding:.1vh .3vw; color:var(--ink); background:var(--white);
+}
+
+/* ==========================================================
+   7. Overlays: clue and final scores
+   ========================================================== */
+.overlay{ position:fixed; inset:0; z-index:50; }
+.clue-overlay{
+  background:var(--blue-deep); color:var(--white); display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:5vh 5vw; animation:clueIn .5s cubic-bezier(.2,.8,.2,1);
+}
+.clue-back{
+  position:absolute; top:2.5vh; left:2vw; font-size:.95rem; font-weight:700; padding:.5rem 1rem; border-radius:999px; cursor:pointer;
+  background:rgba(255,255,255,.12); color:var(--white); border:2px solid rgba(255,255,255,.4);
+}
+.clue-body{
+  width:100%; max-width:1400px; flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:2.4vh;
+}
+.clue-top{ display:flex; gap:2.5vw; align-items:baseline; justify-content:center; text-transform:uppercase; font-weight:800; font-size:clamp(1rem,2.8vmin,1.9rem); }
+.clue-pts{ color:var(--gold); font-weight:900; }
+.clue-turn{ font-size:clamp(.95rem,2.6vmin,1.5rem); font-weight:700; color:var(--light-blue); }
+.clue-text{ font-weight:700; line-height:1.22; text-wrap:balance; overflow-wrap:anywhere; max-width:100%; }
+.clue-text.len-s{ font-size:clamp(2rem,7.5vmin,6rem); }
+.clue-text.len-m{ font-size:clamp(1.8rem,5.6vmin,4.6rem); }
+.clue-text.len-l{ font-size:clamp(1.4rem,4.4vmin,3.6rem); }
+.clue-answer{ color:var(--gold); font-weight:900; font-size:clamp(1.5rem,4.8vmin,3.8rem); line-height:1.2; text-wrap:balance; overflow-wrap:anywhere; animation:clueIn .4s ease; }
+.clue-timer{ font-weight:900; font-size:clamp(2.6rem,9vmin,6rem); font-variant-numeric:tabular-nums; line-height:1; }
+.clue-timer.warn{ color:var(--orange); animation:pulse 1s ease-in-out infinite; }
+.clue-timer.done{ color:var(--orange); }
+.clue-controls,.clue-outcomes{ display:flex; flex-wrap:wrap; gap:1vw; justify-content:center; }
+.big{ font-size:clamp(.95rem,2.6vmin,1.4rem); padding:.7em 1.5em; border-radius:999px; font-weight:800; cursor:pointer; border:none; }
+.big:disabled{ opacity:.4; cursor:not-allowed; }
+.big:hover:not(:disabled){ transform:translateY(-2px); }
+.big:active:not(:disabled){ transform:scale(.97); }
+.timer-btn{ background:var(--light-blue); color:var(--ink); }
+.big.ghost{ background:transparent; color:var(--white); border:2px solid rgba(255,255,255,.5); }
+.reveal{ background:var(--gold); color:var(--ink); }
+.outcome.correct{ background:var(--green); color:var(--white); }
+.outcome.steal{ background:var(--orange); color:var(--ink); }
+.outcome.none{ background:var(--gray); color:var(--ink); }
+.clue-hint{ font-size:.85rem; color:rgba(255,255,255,.6); font-weight:600; }
+
+.final-overlay{ background:rgba(10,25,45,.82); display:flex; align-items:center; justify-content:center; padding:2rem; overflow:hidden; }
+.final-card{
+  position:relative; z-index:2; background:var(--white); color:var(--ink); border-radius:24px; padding:2.2rem 2.5rem;
+  max-width:560px; width:100%; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,.4); animation:clueIn .5s ease;
+}
+.final-card h2{ font-size:clamp(2rem,4vw,3rem); font-weight:900; color:var(--blue-deep); }
+.final-winners{ font-size:1.3rem; font-weight:800; color:var(--plum); margin:.3rem 0 1.2rem; overflow-wrap:anywhere; }
+.final-list{ list-style:none; margin:0 0 1.5rem; padding:0; display:flex; flex-direction:column; gap:.5rem; }
+.final-list li{ display:flex; justify-content:space-between; gap:1rem; padding:.7rem 1rem; border-radius:12px; background:var(--paper); font-weight:700; font-size:1.15rem; }
+.final-list li.win{ background:var(--gold); color:var(--ink); }
+.final-list .f-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.final-list .f-score{ font-variant-numeric:tabular-nums; font-weight:900; }
+.final-actions{ display:flex; justify-content:center; gap:.7rem; flex-wrap:wrap; }
+.confetti{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:1; }
+.confetti i{ position:absolute; top:-6vh; width:10px; height:15px; border-radius:2px; animation:fall linear forwards; }
+
+/* ==========================================================
+   8. Toast-free status bits and animations
+   ========================================================== */
+@keyframes pop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.35); } 100%{ transform:scale(1); } }
+@keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+@keyframes clueIn{ from{ opacity:0; transform:perspective(1200px) rotateX(-12deg) scale(.96); } to{ opacity:1; transform:none; } }
+@keyframes fall{ from{ transform:translateY(0) rotate(0deg); } to{ transform:translateY(115vh) rotate(720deg); } }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+</style>
+</head>
+<body>
+
+<section id="home" class="screen" hidden></section>
+<section id="editor" class="screen" hidden></section>
+<section id="setup" class="screen" hidden></section>
+<section id="play" class="screen" hidden></section>
+
+<div id="clue" class="overlay clue-overlay" hidden role="dialog" aria-modal="true" aria-label="Clue">
+  <button type="button" id="clue-back" class="clue-back">&larr; Back to board</button>
+  <div id="clue-body" class="clue-body"></div>
+</div>
+
+<div id="final" class="overlay final-overlay" hidden role="dialog" aria-modal="true" aria-label="Final scores">
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+  <div class="final-card"><div id="final-body"></div></div>
+</div>
+
+<input type="file" id="import-input" accept=".json,application/json" hidden>
+
+<script>
+/* ==========================================================
+   1. Constants and starter data
+   ========================================================== */
+const STORAGE = { boards:'yacj.boards', game:'yacj.game', settings:'yacj.settings' };
+const MAX_CATS = 6, MAX_ROWS = 6, MAX_TEAMS = 8;
+const TEAM_COLORS = [
+  { bg:'#7d3774', ink:'#ffffff' },  // plum
+  { bg:'#4d7732', ink:'#ffffff' },  // green
+  { bg:'#cb843c', ink:'#252525' },  // orange
+  { bg:'#a2c9e8', ink:'#252525' },  // light blue
+  { bg:'#f4c300', ink:'#252525' }   // gold
+];
+
+/*STARTER_START*/
+const STARTER_BOARD = {
+  id: 'starter-ncssm',
+  title: 'NCSSM Jeopardy!',
+  pointValues: [100, 200, 300, 400, 500],
+  categories: [
+    { name: 'Mo-Town Ball Knowledge', clues: [
+      { clue: "What large landmark building can you often find NCSSM-Morganton students behind watching the sunrise/sunset?", answer: "The Barn" },
+      { clue: "Where do Morganton students often go for their fresh groceries?", answer: "Aldi" },
+      { clue: "What campus wide (club) event consistently has the highest attendance at NCSSM-Morganton?", answer: "Diwali" },
+      { clue: "How much does a load of laundry cost?", answer: "$3.00" },
+      { clue: "Why was the construction of Joiner Hall originally postponed?", answer: "Endangered Species of Owl" }
+    ]},
+    { name: 'Durham Ball Knowledge', clues: [
+      { clue: "This paved pathway through the Durham campus has served for decades as a major student hangout spot.", answer: "Hill Street" },
+      { clue: "Where is the morgue rumoured to be?", answer: "Greynolds Breezeway" },
+      { clue: "What iconic meal is served every Wednesday in the PFM?", answer: "Fried Chicken Wednesdays" },
+      { clue: "Recite the iconic chant of the NCSSM swim team when cheering for their teammates.", answer: "3.14159, secant tangent cosine sine, physics bio polymer chem, give them hell, go ssm!" },
+      { clue: "Which female residence hall has the coldest water fountain on campus?", answer: "Third Beall" }
+    ]},
+    { name: 'NCSSM Lore', clues: [
+      { clue: "NCSSM stands for what?", answer: "North Carolina School of Science and Mathematics" },
+      { clue: "Before it became a school, the Durham campus was the site of this hospital.", answer: "Watts Hospital" },
+      { clue: "NCSSM's very first class had 150 juniors, because the campus was being converted from a hospital, these students initially had to walk to a nearby elementary school for this daily necessity.", answer: "Meals" },
+      { clue: "In 2023 NCSSM broke 43 years of tradition when this annual school event was held somewhere other than the Durham campus for the first time.", answer: "Convocation" },
+      { clue: "In 2011 NCSSM students, faculty, and supporters set a Guinness World Record by collecting this much of one particular item in 24 hours.", answer: "559,885 pounds of food" }
+    ]},
+    { name: 'Do you know NC?', clues: [
+      { clue: "What is North Carolina's nickname?", answer: "The Tar Heel State" },
+      { clue: "This soft drink was invented in New Bern, North Carolina, in 1898.", answer: "Pepsi Cola" },
+      { clue: "Where did the Wright Brothers make their first powered flight?", answer: "Kitty Hawk" },
+      { clue: "This North Carolina-born musician, often called the \"High Priestess of Soul,\" was born Eunice Waymon in Tryon, North Carolina.", answer: "Nina Simone" },
+      { clue: "This North Carolina county is home to Mount Mitchell, the highest point east of the Mississippi River.", answer: "Yancey County" }
+    ]},
+    { name: 'Non-NCSSM: General Knowledge', clues: [
+      { clue: "What continent has no countries?", answer: "Antarctica" },
+      { clue: "This North Carolina-born company started as a single doughnut shop in Winston-Salem in 1937.", answer: "Krispy Kreme" },
+      { clue: "A banana is botanically classified as this type of fruit.", answer: "Berry" },
+      { clue: "In 1919 this American city was hit by a massive wave of molasses that killed 21 people and injured more than 100.", answer: "Boston" },
+      { clue: "The world's shortest war lasted less than an hour. It was fought in 1896 between Britain and this African sultanate.", answer: "Zanzibar" }
+    ]}
+  ]
+};
+/*STARTER_END*/
+
+/* ==========================================================
+   2. Application state
+   ========================================================== */
+const state = {
+  boards: [],
+  game: null,
+  settings: { timerSeconds: 60, muted: false },
+  screen: 'home',      // home | editor | setup | play
+  editId: null,        // board id open in the editor
+  setup: null,         // { boardId, teamCount, names[], timerSeconds }
+  clue: null,          // open clue: { c, r, revealed, running, startedAt, remainingMs, totalMs, lastTick, intervalId, timerEl }
+  audio: null,
+  popTeams: new Set(), // team indexes whose score should pop on next render
+  saveTimer: null
+};
+
+/* ==========================================================
+   3. Small helpers
+   ========================================================== */
+const $ = sel => document.querySelector(sel);
+
+function el(tag, props, ...children){
+  const node = document.createElement(tag);
+  if(props){
+    for(const key of Object.keys(props)){
+      const v = props[key];
+      if(v === undefined || v === null || v === false) continue;
+      if(key === 'class') node.className = v;
+      else if(key === 'text') node.textContent = String(v);
+      else if(key === 'value') node.value = String(v);
+      else if(key === 'style'){
+        for(const sk of Object.keys(v)){
+          if(sk.startsWith('--')) node.style.setProperty(sk, String(v[sk]));
+          else node.style[sk] = v[sk];
+        }
+      }
+      else if(key.startsWith('on') && typeof v === 'function') node.addEventListener(key.slice(2), v);
+      else if(v === true) node.setAttribute(key, '');
+      else node.setAttribute(key, String(v));
+    }
+  }
+  for(const child of children.flat()){
+    if(child === null || child === undefined || child === false) continue;
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  }
+  return node;
+}
+
+function btn(label, onclick, opts){
+  const o = opts || {};
+  const attrs = { type:'button', class:'btn ' + (o.cls || ''), onclick, text:label };
+  for(const k of Object.keys(o)){ if(k !== 'cls') attrs[k] = o[k]; }
+  return el('button', attrs);
+}
+
+function clear(node){ while(node.firstChild) node.removeChild(node.firstChild); }
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function newId(){ return 'b-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8); }
+function clampInt(v, min, max, def){
+  const n = parseInt(v, 10);
+  if(!Number.isFinite(n)) return def;
+  return Math.min(max, Math.max(min, n));
+}
+function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+function slugify(s){ return (String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')) || 'board'; }
+function blurActive(){ const a = document.activeElement; if(a && a.blur) a.blur(); }
+function boardById(id){ return state.boards.find(b => b.id === id) || null; }
+function isPlayable(board, c, r){
+  const cat = board.categories[c];
+  const item = cat && cat.clues[r];
+  return !!(item && item.clue && item.clue.trim());
+}
+function countClues(board){
+  let n = 0;
+  board.categories.forEach(cat => cat.clues.forEach(k => { if(k.clue && k.clue.trim()) n++; }));
+  return n;
+}
+
+/* ==========================================================
+   4. Storage (every access guarded)
+   ========================================================== */
+function storageGet(key){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw === null ? null : JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function storageSet(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){ /* storage unavailable: keep working in memory */ }
+}
+function save(){
+  storageSet(STORAGE.boards, state.boards);
+  storageSet(STORAGE.game, state.game);
+  storageSet(STORAGE.settings, state.settings);
+}
+
+/* Validate and normalise a board. Throws an Error with a readable message when invalid. */
+function parseBoard(raw){
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('The file does not contain a board.');
+  if(typeof raw.title !== 'string') throw new Error('The board needs a title.');
+  if(!Array.isArray(raw.pointValues) || raw.pointValues.length === 0) throw new Error('The board needs a list of point values.');
+  const pointValues = raw.pointValues.map(v => {
+    const n = (typeof v === 'string' && v.trim() !== '') ? Number(v) : v;
+    if(typeof n !== 'number' || !Number.isFinite(n)) throw new Error('Point values must be numbers.');
+    return Math.round(n);
+  });
+  if(!Array.isArray(raw.categories) || raw.categories.length === 0) throw new Error('The board needs at least one category.');
+  const categories = raw.categories.map(cat => {
+    if(!cat || typeof cat !== 'object' || typeof cat.name !== 'string') throw new Error('Each category needs a name.');
+    const clues = Array.isArray(cat.clues) ? cat.clues : [];
+    const rows = pointValues.map((_, r) => {
+      const item = clues[r];
+      if(item === null || item === undefined) return { clue:'', answer:'' };
+      if(typeof item !== 'object' || typeof item.clue !== 'string' || typeof item.answer !== 'string'){
+        throw new Error('Each clue needs "clue" and "answer" text.');
+      }
+      return { clue: item.clue.trim(), answer: item.answer.trim() };
+    });
+    return { name: cat.name.trim(), clues: rows };
+  });
+  return {
+    id: (typeof raw.id === 'string' && raw.id) ? raw.id : newId(),
+    title: raw.title.trim() || 'Untitled board',
+    pointValues,
+    categories
+  };
+}
+
+/* Validate a stored game. Returns null when missing or corrupt. */
+function sanitizeGame(g){
+  try{
+    if(!g || typeof g !== 'object') return null;
+    const boardSnapshot = parseBoard(g.boardSnapshot);
+    if(!Array.isArray(g.teams) || g.teams.length === 0) return null;
+    const teams = g.teams.map((t, i) => ({
+      name: (t && typeof t.name === 'string' && t.name.trim()) ? t.name : ('Team ' + (i + 1)),
+      score: Number.isFinite(Number(t && t.score)) ? Math.round(Number(t.score)) : 0
+    }));
+    const turn = Number.isInteger(g.turn) && g.turn >= 0 && g.turn < teams.length ? g.turn : 0;
+    const used = (g.used && typeof g.used === 'object') ? g.used : {};
+    const history = Array.isArray(g.history) ? g.history.filter(h => h && typeof h.key === 'string') : [];
+    return {
+      boardId: typeof g.boardId === 'string' ? g.boardId : boardSnapshot.id,
+      boardSnapshot, teams, turn, used, history,
+      timerSeconds: clampInt(g.timerSeconds, 5, 600, 60)
+    };
+  }catch(e){ return null; }
+}
+
+function loadAll(){
+  const rawBoards = storageGet(STORAGE.boards);
+  let boards = null;
+  if(Array.isArray(rawBoards)){
+    boards = rawBoards.map(b => { try{ return parseBoard(b); }catch(e){ return null; } }).filter(Boolean);
+  }
+  if(!boards) boards = [clone(STARTER_BOARD)];   // first run, or corrupt storage
+  state.boards = boards;
+  state.game = sanitizeGame(storageGet(STORAGE.game));
+  const s = storageGet(STORAGE.settings);
+  state.settings = {
+    timerSeconds: clampInt(s && s.timerSeconds, 5, 600, 60),
+    muted: !!(s && s.muted)
+  };
+  save();
+}
+
+/* ==========================================================
+   5. Sound (Web Audio, synthesized; context created on first click)
+   ========================================================== */
+function ensureAudio(){
+  try{
+    if(!state.audio){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      state.audio = new AC();
+    }
+    if(state.audio.state === 'suspended') state.audio.resume().catch(() => {});
+    return state.audio;
+  }catch(e){ return null; }
+}
+function tone(freq, when, dur, opts){
+  if(state.settings.muted) return;
+  const ctx = ensureAudio();
+  if(!ctx) return;
+  try{
+    const o = opts || {};
+    const t0 = ctx.currentTime + when;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    if(o.slideTo) osc.frequency.linearRampToValueAtTime(o.slideTo, t0 + dur);
+    const vol = o.vol != null ? o.vol : 0.2;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.03);
+  }catch(e){ /* audio is optional */ }
+}
+function playTick(){ tone(1100, 0, 0.05, { type:'square', vol:0.07 }); }
+function playBuzzer(){ tone(140, 0, 1.0, { type:'sawtooth', vol:0.16 }); tone(110, 0, 1.0, { type:'square', vol:0.05 }); }
+function playReveal(){ tone(660, 0, 0.12, { vol:0.2 }); tone(990, 0.12, 0.22, { vol:0.2 }); }
+function playCorrect(){ [[523,0],[659,0.12],[784,0.24]].forEach(([f,t]) => tone(f, t, 0.22, { vol:0.25 })); }
+function playWrong(){ tone(330, 0, 0.45, { type:'triangle', slideTo:150, vol:0.25 }); }
+function playFanfare(){
+  [[523,0,0.14],[659,0.14,0.14],[784,0.28,0.14],[1047,0.42,0.3],[784,0.8,0.12],[1047,0.92,0.5]]
+    .forEach(([f,t,d]) => tone(f, t, d, { type:'square', vol:0.1 }));
+}
+
+/* ==========================================================
+   6. Screen routing
+   ========================================================== */
+function render(){
+  for(const name of ['home','editor','setup','play']){
+    const sec = document.getElementById(name);
+    if(sec) sec.hidden = name !== state.screen;
+  }
+  document.body.classList.toggle('playing', state.screen === 'play');
+  if(state.screen === 'home') renderHome();
+  else if(state.screen === 'editor') renderEditor();
+  else if(state.screen === 'setup') renderSetup();
+  else if(state.screen === 'play') renderPlay();
+}
+function go(screen){
+  if(state.saveTimer) flushSave();
+  state.screen = screen;
+  render();
+}
+
+/* ==========================================================
+   7. Home screen
+   ========================================================== */
+function renderHome(){
+  const root = $('#home');
+  clear(root);
+  root.appendChild(el('header', { class:'home-head' },
+    el('h1', { text:'YAC Jeopardy' }),
+    el('p', { class:'subtitle', text:'NCSSM Young Alumni Council' })));
+
+  if(state.game) root.appendChild(resumeCard());
+
+  root.appendChild(el('div', { class:'toolbar' },
+    btn('New board', newBoard, { cls:'primary' }),
+    btn('Import board', () => $('#import-input').click()),
+    btn('Restore starter board', restoreStarter)));
+
+  const grid = el('div', { class:'board-grid' });
+  if(!state.boards.length){
+    grid.appendChild(el('p', { class:'empty', text:'No boards yet. Create one, import one, or restore the starter board.' }));
+  }
+  state.boards.forEach(b => grid.appendChild(boardCard(b)));
+  root.appendChild(grid);
+}
+
+function resumeCard(){
+  const g = state.game;
+  const list = el('ul', { class:'resume-scores' }, g.teams.map((t, i) =>
+    el('li', { class:'resume-team', style:{ '--accent': TEAM_COLORS[i % TEAM_COLORS.length].bg } },
+      el('span', { text:t.name }), el('span', { text:String(t.score) }))));
+  return el('section', { class:'resume-card', 'aria-label':'Game in progress' },
+    el('div', {},
+      el('p', { class:'eyebrow', text:'Game in progress' }),
+      el('h2', { text:g.boardSnapshot.title }),
+      list),
+    el('div', { class:'resume-actions' },
+      btn('Resume', enterPlay, { cls:'primary' }),
+      btn('Discard', discardGame, { cls:'danger' })));
+}
+
+function boardCard(b){
+  return el('article', { class:'board-card' },
+    el('h3', { class:'card-title', text:b.title }),
+    el('p', { class:'card-meta', text: plural(b.categories.length, 'category', 'categories') + ' · ' + plural(countClues(b), 'clue', 'clues') }),
+    el('div', { class:'card-actions' },
+      btn('Play', () => openSetup(b.id), { cls:'primary small' }),
+      btn('Edit', () => openEditor(b.id), { cls:'small' }),
+      btn('Duplicate', () => duplicateBoard(b.id), { cls:'small' }),
+      btn('Export', () => exportBoard(b), { cls:'small' }),
+      btn('Delete', () => deleteBoard(b.id), { cls:'small danger' })));
+}
+
+function discardGame(){
+  if(!confirm('Discard the game in progress? Its scores will be lost.')) return;
+  state.game = null;
+  save();
+  render();
+}
+
+function newBoard(){
+  const b = {
+    id: newId(),
+    title: 'Untitled board',
+    pointValues: [100, 200, 300, 400, 500],
+    categories: Array.from({ length:5 }, (_, i) => ({
+      name: 'Category ' + (i + 1),
+      clues: Array.from({ length:5 }, () => ({ clue:'', answer:'' }))
+    }))
+  };
+  state.boards.push(b);
+  save();
+  openEditor(b.id);
+}
+
+function duplicateBoard(id){
+  const b = boardById(id);
+  if(!b) return;
+  const copy = clone(b);
+  copy.id = newId();
+  copy.title = b.title + ' (copy)';
+  state.boards.splice(state.boards.indexOf(b) + 1, 0, copy);
+  save();
+  render();
+}
+
+function deleteBoard(id){
+  const b = boardById(id);
+  if(!b) return;
+  if(!confirm('Delete "' + b.title + '"? This cannot be undone.')) return;
+  state.boards = state.boards.filter(x => x !== b);
+  save();
+  render();
+}
+
+function exportBoard(b){
+  try{
+    const data = JSON.stringify({ title:b.title, pointValues:b.pointValues, categories:b.categories }, null, 2);
+    const url = URL.createObjectURL(new Blob([data], { type:'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = slugify(b.title) + '.yacboard.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }catch(e){ alert('Sorry, this board could not be exported.'); }
+}
+
+function onImportChange(e){
+  const input = e.target;
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const b = parseBoard(JSON.parse(String(reader.result)));
+      b.id = newId();
+      state.boards.push(b);
+      save();
+      render();
+    }catch(err){
+      alert('That file is not a valid YAC board.\n\n' + err.message);
+    }
+  };
+  reader.onerror = () => alert('The file could not be read.');
+  reader.readAsText(file);
+}
+
+function restoreStarter(){
+  const existing = boardById(STARTER_BOARD.id);
+  if(existing && !confirm('Replace the current starter board with the original version?')) return;
+  const fresh = clone(STARTER_BOARD);
+  if(existing) state.boards[state.boards.indexOf(existing)] = fresh;
+  else state.boards.unshift(fresh);
+  save();
+  render();
+}
+
+/* ==========================================================
+   8. Editor
+   ========================================================== */
+function openEditor(id){
+  state.editId = id;
+  go('editor');
+}
+
+function padBoard(b){
+  b.categories.forEach(cat => {
+    while(cat.clues.length < b.pointValues.length) cat.clues.push({ clue:'', answer:'' });
+  });
+}
+
+function setSaveLabel(text){
+  const node = $('#save-status');
+  if(node) node.textContent = text;
+}
+function markDirty(){
+  setSaveLabel('Saving…');
+  clearTimeout(state.saveTimer);
+  state.saveTimer = setTimeout(flushSave, 300);
+}
+function flushSave(){
+  clearTimeout(state.saveTimer);
+  state.saveTimer = null;
+  save();
+  setSaveLabel('Saved');
+}
+
+function renderEditor(){
+  const root = $('#editor');
+  clear(root);
+  const b = boardById(state.editId);
+  if(!b){ go('home'); return; }
+  padBoard(b);
+  const cols = b.categories.length, rows = b.pointValues.length;
+
+  root.appendChild(el('div', { class:'editor-bar' },
+    el('input', { type:'text', class:'title-input', maxlength:'80', 'aria-label':'Board title', value:b.title,
+      oninput: e => { b.title = e.target.value; markDirty(); } }),
+    el('span', { id:'save-status', class:'save-status', 'aria-live':'polite', text:'Saved' }),
+    el('div', { class:'editor-actions' },
+      btn('Add category', addCategory, { disabled: cols >= MAX_CATS }),
+      btn('Add row', addRow, { disabled: rows >= MAX_ROWS }),
+      btn('Play this board', () => { flushSave(); openSetup(b.id); }, { cls:'ghost' }),
+      btn('Done', () => { flushSave(); go('home'); }, { cls:'primary' }))));
+
+  const scroll = el('div', { class:'editor-scroll' });
+  const grid = el('div', { class:'editor-grid', style:{ '--cols': cols } });
+  grid.appendChild(el('div', { class:'ed-corner', text:'Points' }));
+  b.categories.forEach((cat, c) => {
+    grid.appendChild(el('div', { class:'ed-head' },
+      el('span', { class:'ed-label', text:'Category ' + (c + 1) }),
+      el('input', { type:'text', maxlength:'60', value:cat.name, 'aria-label':'Category ' + (c + 1) + ' name',
+        oninput: e => { cat.name = e.target.value; markDirty(); } }),
+      btn('Remove category', () => removeCategory(c), { cls:'small', disabled: cols <= 1 })));
+  });
+  for(let r = 0; r < rows; r++){
+    grid.appendChild(el('div', { class:'ed-value' },
+      el('input', { type:'number', step:'1', value:b.pointValues[r], 'aria-label':'Row ' + (r + 1) + ' point value',
+        oninput: e => {
+          const v = parseFloat(e.target.value);
+          if(Number.isFinite(v)){ b.pointValues[r] = Math.round(v); markDirty(); }
+        } }),
+      btn('Remove row', () => removeRow(r), { cls:'small danger', disabled: rows <= 1 })));
+    b.categories.forEach((cat, c) => {
+      const cell = cat.clues[r];
+      grid.appendChild(el('div', { class:'ed-cell' },
+        el('label', { class:'ed-field' },
+          el('span', { text:'Clue' }),
+          el('textarea', { rows:'2', value:cell.clue, 'aria-label':'Category ' + (c + 1) + ', row ' + (r + 1) + ' clue',
+            oninput: e => { cell.clue = e.target.value; markDirty(); } })),
+        el('label', { class:'ed-field' },
+          el('span', { text:'Answer' }),
+          el('textarea', { rows:'1', value:cell.answer, 'aria-label':'Category ' + (c + 1) + ', row ' + (r + 1) + ' answer',
+            oninput: e => { cell.answer = e.target.value; markDirty(); } }))));
+    });
+  }
+  scroll.appendChild(grid);
+  root.appendChild(scroll);
+}
+
+function hasContent(cells){
+  return cells.some(k => (k.clue || '').trim() || (k.answer || '').trim());
+}
+
+function addCategory(){
+  const b = boardById(state.editId);
+  if(!b || b.categories.length >= MAX_CATS) return;
+  padBoard(b);
+  b.categories.push({
+    name: 'Category ' + (b.categories.length + 1),
+    clues: b.pointValues.map(() => ({ clue:'', answer:'' }))
+  });
+  flushSave();
+  renderEditor();
+}
+
+function removeCategory(c){
+  const b = boardById(state.editId);
+  if(!b || b.categories.length <= 1) return;
+  const cat = b.categories[c];
+  if(hasContent(cat.clues) && !confirm('Remove "' + (cat.name || 'this category') + '" and all its clues?')) return;
+  b.categories.splice(c, 1);
+  flushSave();
+  renderEditor();
+}
+
+function addRow(){
+  const b = boardById(state.editId);
+  if(!b || b.pointValues.length >= MAX_ROWS) return;
+  padBoard(b);
+  const pv = b.pointValues;
+  const step = (pv.length >= 2 && pv[1] - pv[0] > 0) ? pv[1] - pv[0] : 100;
+  pv.push((pv[pv.length - 1] || 0) + step);
+  b.categories.forEach(cat => cat.clues.push({ clue:'', answer:'' }));
+  flushSave();
+  renderEditor();
+}
+
+function removeRow(r){
+  const b = boardById(state.editId);
+  if(!b || b.pointValues.length <= 1) return;
+  padBoard(b);
+  const rowCells = b.categories.map(cat => cat.clues[r]);
+  if(hasContent(rowCells) && !confirm('Remove this row and its clues?')) return;
+  b.pointValues.splice(r, 1);
+  b.categories.forEach(cat => cat.clues.splice(r, 1));
+  flushSave();
+  renderEditor();
+}
+
+/* ==========================================================
+   9. Game setup
+   ========================================================== */
+function openSetup(boardId){
+  const b = boardById(boardId);
+  if(!b) return;
+  state.setup = {
+    boardId,
+    teamCount: 2,
+    names: ['Team 1', 'Team 2'],
+    timerSeconds: state.settings.timerSeconds
+  };
+  go('setup');
+}
+
+function setTeamCount(n){
+  const s = state.setup;
+  if(!s) return;
+  s.teamCount = Math.min(MAX_TEAMS, Math.max(1, n));
+  render();
+}
+
+function renderSetup(){
+  const root = $('#setup');
+  clear(root);
+  const s = state.setup;
+  const b = s ? boardById(s.boardId) : null;
+  if(!b){ go('home'); return; }
+  const n = s.teamCount;
+  while(s.names.length < n) s.names.push('Team ' + (s.names.length + 1));
+
+  const nameInputs = [];
+  for(let i = 0; i < n; i++){
+    nameInputs.push(el('label', { class:'field' },
+      el('span', { class:'field-label', text:'Team ' + (i + 1) + ' name' }),
+      el('input', { type:'text', maxlength:'30', value:s.names[i], 'aria-label':'Team ' + (i + 1) + ' name',
+        oninput: e => { s.names[i] = e.target.value; } })));
+  }
+
+  root.appendChild(el('div', { class:'setup-card' },
+    el('p', { class:'eyebrow', text:'Game setup' }),
+    el('h2', { class:'setup-title', text:b.title }),
+    el('div', { class:'field' },
+      el('span', { class:'field-label', text:'Number of teams' }),
+      el('div', { class:'stepper' },
+        btn('−', () => setTeamCount(n - 1), { cls:'step', disabled: n <= 1, 'aria-label':'Fewer teams' }),
+        el('span', { class:'step-value', text:String(n) }),
+        btn('+', () => setTeamCount(n + 1), { cls:'step', disabled: n >= MAX_TEAMS, 'aria-label':'More teams' }))),
+    el('div', { class:'names-grid' }, nameInputs),
+    el('label', { class:'field' },
+      el('span', { class:'field-label', text:'Seconds per clue' }),
+      el('input', { type:'number', min:'5', max:'600', step:'1', value:s.timerSeconds,
+        oninput: e => { const v = parseInt(e.target.value, 10); if(Number.isFinite(v)) s.timerSeconds = v; } })),
+    el('div', { class:'setup-actions' },
+      btn('Back', () => go('home')),
+      btn('Start game', startGame, { cls:'primary' }))));
+}
+
+function startGame(){
+  const s = state.setup;
+  const b = s ? boardById(s.boardId) : null;
+  if(!b) return;
+  if(state.game && !confirm('Replace the game in progress? Its scores will be lost.')) return;
+  const timer = clampInt(s.timerSeconds, 5, 600, 60);
+  const teams = [];
+  for(let i = 0; i < s.teamCount; i++){
+    teams.push({ name: (s.names[i] || '').trim() || ('Team ' + (i + 1)), score: 0 });
+  }
+  state.game = {
+    boardId: b.id,
+    boardSnapshot: clone(b),
+    teams,
+    turn: 0,
+    used: {},
+    history: [],
+    timerSeconds: timer
+  };
+  state.settings.timerSeconds = timer;
+  save();
+  enterPlay();
+}
+
+/* ==========================================================
+   10. Play: board view
+   ========================================================== */
+function enterPlay(){
+  if(!state.game) return;
+  go('play');
+  if(gameComplete(state.game)) showFinal();
+}
+
+function renderPlay(){
+  const root = $('#play');
+  clear(root);
+  const g = state.game;
+  if(!g){ go('home'); return; }
+  const b = g.boardSnapshot;
+  const pops = state.popTeams;
+  state.popTeams = new Set();
+  const fsOn = !!document.fullscreenElement;
+
+  root.appendChild(el('header', { class:'topbar' },
+    el('h2', { class:'play-title', text:b.title }),
+    el('div', { class:'top-actions' },
+      btn('Undo', undoLast, { cls:'top-btn', id:'undo-btn', disabled: !g.history.length, title:'Undo the last outcome (Ctrl/Cmd+Z)' }),
+      btn(state.settings.muted ? 'Sound: off' : 'Sound: on', toggleMute, { cls:'top-btn' }),
+      btn(fsOn ? 'Exit fullscreen' : 'Fullscreen', toggleFullscreen, { cls:'top-btn' }),
+      btn('Exit', exitPlay, { cls:'top-btn' }))));
+
+  const cols = b.categories.length, rows = b.pointValues.length;
+  const board = el('main', { class:'board', style:{ '--cols':cols, '--rows':rows } });
+  b.categories.forEach(cat => board.appendChild(el('div', { class:'cat-head', text: cat.name })));
+  let anyPlayable = false;
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      const key = c + '-' + r;
+      const used = !!g.used[key];
+      const playable = isPlayable(b, c, r);
+      if(playable) anyPlayable = true;
+      const blank = used || !playable;
+      board.appendChild(el('button', {
+        type:'button',
+        class:'tile',
+        disabled: blank,
+        onclick: () => openClue(c, r),
+        'aria-label': blank ? 'Empty square' : (b.categories[c].name + ', ' + b.pointValues[r] + ' points'),
+        text: blank ? '' : String(b.pointValues[r])
+      }));
+    }
+  }
+  root.appendChild(board);
+  if(!anyPlayable) root.appendChild(el('p', { class:'board-note', text:'This board has no clues yet. Add some in the editor.' }));
+  root.appendChild(teamBar(g, pops));
+}
+
+function teamBar(g, pops){
+  const bar = el('footer', { class:'teambar', 'aria-label':'Teams' });
+  g.teams.forEach((t, i) => {
+    const col = TEAM_COLORS[i % TEAM_COLORS.length];
+    const isTurn = i === g.turn;
+    bar.appendChild(el('div', { class:'team-chip' + (isTurn ? ' is-turn' : ''), style:{ '--accent':col.bg, '--ink':col.ink } },
+      el('span', { class:'turn-label', text: isTurn ? 'Their turn' : '' }),
+      el('button', { type:'button', class:'team-name', title:"Make this team's turn", onclick: () => setTurn(i), text:t.name }),
+      el('button', { type:'button', class:'team-score' + (pops.has(i) ? ' pop' : ''), title:'Click to correct this score',
+        onclick: e => editScore(i, e.currentTarget), text:String(t.score) })));
+  });
+  return bar;
+}
+
+function setTurn(i){
+  const g = state.game;
+  if(!g) return;
+  g.turn = i;
+  save();
+  render();
+}
+
+/* Turn a score into an input. Enter or blur saves, Escape cancels. */
+function editScore(i, scoreBtn){
+  const g = state.game;
+  if(!g) return;
+  const team = g.teams[i];
+  let done = false;
+  const input = el('input', { type:'number', step:'1', class:'score-input', value:team.score, 'aria-label':'Score for ' + team.name });
+  const finish = commit => {
+    if(done) return;
+    done = true;
+    if(commit){
+      const raw = input.value.trim();
+      const n = Number(raw);
+      if(raw !== '' && Number.isFinite(n)){
+        team.score = Math.round(n);
+        save();
+      }
+    }
+    render();
+  };
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key === 'Escape'){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+  scoreBtn.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function toggleMute(){
+  state.settings.muted = !state.settings.muted;
+  save();
+  render();
+}
+
+function toggleFullscreen(){
+  try{
+    if(document.fullscreenElement){
+      const p = document.exitFullscreen && document.exitFullscreen();
+      if(p && p.catch) p.catch(() => {});
+    }else{
+      const p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+      if(p && p.catch) p.catch(() => {});
+    }
+  }catch(e){ /* fullscreen not available */ }
+}
+
+function exitPlay(){
+  closeClue();
+  hideFinal();
+  go('home');
+}
+
+/* Undo the most recent outcome: restore scores, unuse the square, restore the turn. */
+function undoLast(){
+  const g = state.game;
+  if(!g || !g.history.length) return;
+  const h = g.history.pop();
+  h.scoreChanges.forEach(sc => { const t = g.teams[sc.team]; if(t) t.score -= sc.delta; });
+  delete g.used[h.key];
+  g.turn = h.prevTurn;
+  state.popTeams = new Set(h.scoreChanges.map(sc => sc.team));
+  save();
+  render();
+}
+
+function gameComplete(g){
+  const b = g.boardSnapshot;
+  let total = 0, done = 0;
+  for(let r = 0; r < b.pointValues.length; r++){
+    for(let c = 0; c < b.categories.length; c++){
+      if(!isPlayable(b, c, r)) continue;
+      total++;
+      if(g.used[c + '-' + r]) done++;
+    }
+  }
+  return total > 0 && done === total;
+}
+
+/* ==========================================================
+   11. Clue view (overlay)
+   ========================================================== */
+function openClue(c, r){
+  const g = state.game;
+  if(!g) return;
+  const b = g.boardSnapshot;
+  if(g.used[c + '-' + r] || !isPlayable(b, c, r)) return;
+  const total = g.timerSeconds * 1000;
+  state.clue = { c, r, revealed:false, running:false, startedAt:0, remainingMs:total, totalMs:total, lastTick:null, intervalId:null, timerEl:null };
+  blurActive();
+  $('#clue').hidden = false;
+  renderClue();
+}
+
+function closeClue(){
+  const k = state.clue;
+  if(k && k.intervalId) clearInterval(k.intervalId);
+  state.clue = null;
+  $('#clue').hidden = true;
+}
+
+function clueMsLeft(k){
+  return k.running ? k.remainingMs - (performance.now() - k.startedAt) : k.remainingMs;
+}
+function fmtTime(ms){
+  if(ms <= 0) return 'Time!';
+  const s = Math.ceil(ms / 1000);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function updateTimerView(){
+  const k = state.clue;
+  if(!k || !k.timerEl) return;
+  const ms = Math.max(0, clueMsLeft(k));
+  k.timerEl.textContent = fmtTime(ms);
+  k.timerEl.classList.toggle('warn', ms > 0 && ms <= 10000);
+  k.timerEl.classList.toggle('done', ms <= 0);
+}
+
+function renderClue(){
+  const k = state.clue, g = state.game;
+  if(!k || !g) return;
+  const b = g.boardSnapshot;
+  const root = $('#clue-body');
+  clear(root);
+  const cat = b.categories[k.c];
+  const item = cat.clues[k.r];
+  const team = g.teams[g.turn];
+  const text = item.clue.trim();
+  const len = text.length;
+  const lenClass = len <= 80 ? 'len-s' : (len <= 160 ? 'len-m' : 'len-l');
+
+  root.appendChild(el('div', { class:'clue-top' },
+    el('span', { text: cat.name }),
+    el('span', { class:'clue-pts', text: String(b.pointValues[k.r]) })));
+  root.appendChild(el('p', { class:'clue-turn', text: team.name + "'s turn" }));
+  root.appendChild(el('p', { class:'clue-text ' + lenClass, text }));
+  if(k.revealed){
+    root.appendChild(el('p', { class:'clue-answer', text: item.answer.trim() || '(no answer entered)' }));
+  }
+
+  k.timerEl = el('div', { class:'clue-timer', 'aria-live':'off', text: fmtTime(Math.max(0, clueMsLeft(k))) });
+  root.appendChild(k.timerEl);
+
+  const canStart = !k.revealed && (k.running || k.remainingMs > 0);
+  root.appendChild(el('div', { class:'clue-controls' },
+    btn(k.running ? 'Pause' : 'Start timer', startTimer, { cls:'big timer-btn', disabled: !canStart }),
+    btn('Reset', resetTimer, { cls:'big ghost' })));
+
+  if(!k.revealed){
+    root.appendChild(el('div', { class:'clue-outcomes' },
+      btn('Reveal answer', revealAnswer, { cls:'big reveal' })));
+  }else{
+    const row = el('div', { class:'clue-outcomes' });
+    row.appendChild(btn('✓ ' + team.name + ' got it', () => resolveClue('correct', null), { cls:'big outcome correct' }));
+    g.teams.forEach((t, i) => {
+      if(i !== g.turn) row.appendChild(btn('Stolen by ' + t.name, () => resolveClue('steal', i), { cls:'big outcome steal' }));
+    });
+    row.appendChild(btn('No one', () => resolveClue('none', null), { cls:'big outcome none' }));
+    root.appendChild(row);
+  }
+
+  root.appendChild(el('p', { class:'clue-hint', text:'Space: reveal answer · T: start or pause timer · Esc: back to board' }));
+  updateTimerView();
+}
+
+function startTimer(){
+  const k = state.clue;
+  if(!k || k.revealed) return;
+  if(k.running){ pauseTimer(); return; }
+  if(k.remainingMs <= 0) return;
+  ensureAudio();
+  k.running = true;
+  k.startedAt = performance.now();
+  k.lastTick = null;
+  clearInterval(k.intervalId);
+  k.intervalId = setInterval(timerTick, 100);
+  renderClue();
+  blurActive();
+}
+
+function pauseTimer(){
+  const k = state.clue;
+  if(!k || !k.running) return;
+  k.remainingMs = Math.max(0, clueMsLeft(k));
+  k.running = false;
+  clearInterval(k.intervalId);
+  k.intervalId = null;
+  renderClue();
+  blurActive();
+}
+
+function resetTimer(){
+  const k = state.clue;
+  if(!k) return;
+  clearInterval(k.intervalId);
+  k.intervalId = null;
+  k.running = false;
+  k.remainingMs = k.totalMs;
+  k.lastTick = null;
+  renderClue();
+  blurActive();
+}
+
+function timerTick(){
+  const k = state.clue;
+  if(!k || !k.running) return;
+  const ms = clueMsLeft(k);
+  if(ms <= 0){
+    k.remainingMs = 0;
+    k.running = false;
+    clearInterval(k.intervalId);
+    k.intervalId = null;
+    playBuzzer();
+    renderClue();
+    return;
+  }
+  const sec = Math.ceil(ms / 1000);
+  if(sec <= 10 && sec !== k.lastTick){
+    k.lastTick = sec;
+    playTick();
+  }
+  updateTimerView();
+}
+
+function revealAnswer(){
+  const k = state.clue;
+  if(!k || k.revealed) return;
+  if(k.running){
+    k.remainingMs = Math.max(0, clueMsLeft(k));
+    k.running = false;
+    clearInterval(k.intervalId);
+    k.intervalId = null;
+  }
+  k.revealed = true;
+  playReveal();
+  renderClue();
+  blurActive();
+}
+
+/* Record one outcome for the clue. Wrong answers cost nothing. Always rotates the turn. */
+function resolveClue(outcome, stealerIdx){
+  const k = state.clue, g = state.game;
+  if(!k || !g) return;
+  const pts = g.boardSnapshot.pointValues[k.r];
+  const key = k.c + '-' + k.r;
+  const prevTurn = g.turn;
+  const changes = [];
+  let winner = null;
+  if(outcome === 'correct') winner = prevTurn;
+  else if(outcome === 'steal') winner = stealerIdx;
+  if(winner !== null){
+    g.teams[winner].score += pts;
+    changes.push({ team:winner, delta:pts });
+  }
+  g.used[key] = true;
+  g.history.push({ key, prevTurn, scoreChanges:changes });
+  g.turn = (prevTurn + 1) % g.teams.length;
+  state.popTeams = new Set(changes.map(sc => sc.team));
+
+  closeClue();
+  save();
+  if(outcome === 'none') playWrong();
+  else playCorrect();
+  render();
+  if(gameComplete(g)) showFinal();
+}
+
+/* ==========================================================
+   12. Final scores overlay
+   ========================================================== */
+function showFinal(){
+  const g = state.game;
+  if(!g) return;
+  const ranked = g.teams.map((t, i) => ({ name:t.name, score:t.score, i }))
+    .sort((a, b) => b.score - a.score);
+  const top = ranked[0].score;
+  const winners = ranked.filter(x => x.score === top);
+  const box = $('#final-body');
+  clear(box);
+  box.appendChild(el('h2', { text: winners.length > 1 ? "It's a tie!" : 'Winner!' }));
+  box.appendChild(el('p', { class:'final-winners', text: winners.map(w => w.name).join(' & ') }));
+  box.appendChild(el('ol', { class:'final-list' }, ranked.map(x =>
+    el('li', { class: x.score === top ? 'win' : '' },
+      el('span', { class:'f-name', text:x.name }),
+      el('span', { class:'f-score', text:String(x.score) })))));
+  box.appendChild(el('div', { class:'final-actions' },
+    btn('Back to boards', () => { state.game = null; save(); hideFinal(); go('home'); }, { cls:'primary' }),
+    btn('Keep board open', hideFinal)));
+  launchConfetti();
+  $('#final').hidden = false;
+  playFanfare();
+}
+
+function hideFinal(){
+  $('#final').hidden = true;
+  clear($('#confetti'));
+}
+
+function launchConfetti(){
+  const host = $('#confetti');
+  clear(host);
+  const colors = ['#f4c300', '#346094', '#7d3774', '#4d7732', '#cb843c', '#a2c9e8', '#ffffff'];
+  for(let i = 0; i < 120; i++){
+    host.appendChild(el('i', { style:{
+      left: (Math.random() * 100) + '%',
+      background: colors[i % colors.length],
+      animationDelay: (Math.random() * 1.5) + 's',
+      animationDuration: (2.6 + Math.random() * 2) + 's',
+      transform: 'rotate(' + Math.round(Math.random() * 360) + 'deg)'
+    } }));
+  }
+}
+
+/* ==========================================================
+   13. Global input handling
+   ========================================================== */
+function onKeyDown(e){
+  const t = e.target;
+  const tag = t && t.tagName;
+  const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!(t && t.isContentEditable);
+  if(typing) return;
+
+  if(state.clue){
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    if(e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); revealAnswer(); }
+    else if(e.key === 't' || e.key === 'T'){ e.preventDefault(); startTimer(); }
+    else if(e.key === 'Escape'){ e.preventDefault(); closeClue(); blurActive(); }
+    return;
+  }
+
+  if(state.screen === 'play' && $('#final').hidden && (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')){
+    e.preventDefault();
+    undoLast();
+  }
+}
+
+/* ==========================================================
+   14. Init
+   ========================================================== */
+function init(){
+  loadAll();
+  $('#clue-back').addEventListener('click', () => { closeClue(); blurActive(); });
+  $('#import-input').addEventListener('change', onImportChange);
+  document.addEventListener('pointerdown', () => ensureAudio(), true);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('fullscreenchange', () => { if(state.screen === 'play') render(); });
+  window.addEventListener('beforeunload', () => { if(state.saveTimer) flushSave(); });
+  go('home');
+}
+
+init();
+</script>
+</body>
+</html>
