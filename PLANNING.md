@@ -224,7 +224,13 @@ Known gaps against the plan:
 - In the editor, the clue boxes are small and long clues need scrolling to read.
 - The home screen is plain.
 
+### 2026-10-11 — published to GitHub
+
+- Repository (public): https://github.com/JRod059/ncssm-yac-jeopardy
+- Play link (GitHub Pages, from the `main` branch): https://jrod059.github.io/ncssm-yac-jeopardy/
+- `index.html` forwards the play link to `yac-jeopardy.html`. `README.md` explains playing, sharing boards and editing.
+- Edit access is given per person under Settings → Collaborators in the repository.
+
 ## Notes
 
-- The project folder is not yet a git repository. Initialise git before the first code is written.
 - "Jeopardy" is a trademark. Fine for a private group game; worth a different name if the app is ever published publicly.
